@@ -14,7 +14,7 @@ void entry() {
   acc += adc (0,7); 
   acc += adc (0,7); 
   adcval = acc >> 2;
-  if (adcval > 2500){
+  if (adcval < 2500){
     wake();
   }
 }

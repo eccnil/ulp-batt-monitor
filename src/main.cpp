@@ -9,7 +9,7 @@
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  60       /* Time ESP32 will go to sleep (in seconds) */
-#define LED 26
+#define LED 26                  /* led pin (blinks with low reads) */
 
 
 // Unlike the esp-idf always use these binary blob names
@@ -24,7 +24,6 @@ void blink();
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
   // wakeup reason
   wakeup_reason();
   int adc2 = analogRead(A6);
@@ -34,14 +33,18 @@ void setup() {
 }
 
 // the loop function runs over and over again forever
+// this one is intentend to run never
 void loop() {
   delay(100);
 }
 
+//configures ulp program an launches it
 static void init_run_ulp(uint32_t usec) {
+  //init adc for ulc (hard way)
   adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_0);
   adc1_config_width(ADC_WIDTH_BIT_12);
   adc1_ulp_enable();
+
   ulp_set_wakeup_period(0, usec);
   esp_err_t err = ulptool_load_binary(0, ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start) / sizeof(uint32_t));
   err = ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t));
