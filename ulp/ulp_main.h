@@ -4,4 +4,5 @@
 #pragma once
 
 extern uint32_t ulp_adcval;
+extern uint32_t ulp_counter;
 extern uint32_t ulp_entry;

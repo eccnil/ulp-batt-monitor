@@ -5,11 +5,14 @@
 // must include ulptool helper functions also
 #include "ulptool.h"
 #include "driver/adc.h"
+#include "driver/rtc_io.h"
 
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  60       /* Time ESP32 will go to sleep (in seconds) */
-#define LED 26                  /* led pin (blinks with low reads) */
+#define TIME_TO_SLEEP  10       /* Time ESP32 will go to sleep (in seconds) */
+#define GPIO_LED GPIO_NUM_4     /* led pin (blinks with low reads) */
+#define GPIO_ADC ADC1_CHANNEL_6 /* battery metter adc */
+#define PIN_ADC A6
 
 
 // Unlike the esp-idf always use these binary blob names
@@ -26,7 +29,7 @@ void setup() {
   Serial.begin(115200);
   // wakeup reason
   wakeup_reason();
-  int adc2 = analogRead(A6);
+  int adc2 = analogRead(PIN_ADC);
   Serial.printf("adc: %i (%i)\n", ulp_adcval & 0xFFFF, adc2);
   // sleep 
   sleep_now();
@@ -40,10 +43,14 @@ void loop() {
 
 //configures ulp program an launches it
 static void init_run_ulp(uint32_t usec) {
-  //init adc for ulc (hard way)
-  adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_0);
+  //init adc for ulc (hard way) for battery level read
+  adc1_config_channel_atten(GPIO_ADC, ADC_ATTEN_DB_0);
   adc1_config_width(ADC_WIDTH_BIT_12);
   adc1_ulp_enable();
+  //init gpio for writing (hard way) for led
+  rtc_gpio_init(GPIO_LED);
+  rtc_gpio_set_direction(GPIO_LED, RTC_GPIO_MODE_OUTPUT_ONLY);
+  rtc_gpio_set_level(GPIO_LED, 0);
 
   ulp_set_wakeup_period(0, usec);
   esp_err_t err = ulptool_load_binary(0, ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start) / sizeof(uint32_t));
@@ -59,7 +66,7 @@ void sleep_now(){
   //esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0);
   // ulp 
   esp_sleep_enable_ulp_wakeup();
-  init_run_ulp(100 * 1000); // 100 msec
+  init_run_ulp(500 * 1000); // 500 msec
   
   //go sleep
   esp_deep_sleep_start();
@@ -74,15 +81,9 @@ void wakeup_reason(){
     case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
     case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
     case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
-    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); blink(); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
     default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
   }
 }
 
-void blink(){
-  pinMode(LED, OUTPUT);
-  digitalWrite(LED, HIGH);
-  delay(400); 
-  digitalWrite(LED, LOW);
-}
 
