@@ -9,7 +9,7 @@
 
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  10       /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  60       /* Time ESP32 will go to sleep (in seconds) */
 #define GPIO_LED GPIO_NUM_4     /* led pin (blinks with low reads) */
 #define GPIO_ADC ADC1_CHANNEL_6 /* battery metter adc */
 #define PIN_ADC A6
@@ -29,8 +29,8 @@ void setup() {
   Serial.begin(115200);
   // wakeup reason
   wakeup_reason();
-  int adc2 = analogRead(PIN_ADC);
-  Serial.printf("adc: %i (%i)\n", ulp_adcval & 0xFFFF, adc2);
+  int miliVolts = (ulp_adcval & 0xFFFF) / 1.240; 
+  Serial.printf("adc: %i (%iv)\n", ulp_adcval & 0xFFFF, miliVolts);
   // sleep 
   sleep_now();
 }
@@ -66,7 +66,7 @@ void sleep_now(){
   //esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0);
   // ulp 
   esp_sleep_enable_ulp_wakeup();
-  init_run_ulp(500 * 1000); // 500 msec
+  init_run_ulp(100 * 1000); // 500 msec
   
   //go sleep
   esp_deep_sleep_start();
